@@ -85,5 +85,5 @@ class MobileNetV2Encoder(MobileNetV2):
         self.load_state_dict(state_dict,strict=False)
 
 def mobilenet_v2(input,pretrained):
-    model = MobileNetV2Encoder(input,pretrained,model_path="./models/MobieNet/pre_train/mobilenet_v2-b0353104.pth")
+    model = MobileNetV2Encoder(input,pretrained,model_path="./mobilenet_v2-b0353104.pth")
     return model

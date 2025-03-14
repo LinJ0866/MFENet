@@ -210,5 +210,5 @@ class LinearBottleneck(nn.Module):
 
 def depth_mobie(pretrained):
     model = DepthBranch(pretrained,num_in_ch=6, num_out_ch=56, num_feat=64)
-    # model = DepthBranch(pretrained,model_path="./models/MobieNet/pre_train/mobilenet_v2-b0353104.pth")
+    # model = DepthBranch(pretrained,model_path="./mobilenet_v2-b0353104.pth")
     return model

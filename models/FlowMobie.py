@@ -202,5 +202,5 @@ class LinearBottleneck(nn.Module):
 #         else x
 
 def flow_mobie(pretrained):
-    model = FlowBranch(pretrained,model_path="./models/MobieNet/pre_train/mobilenet_v2-b0353104.pth")
+    model = FlowBranch(pretrained,model_path="./mobilenet_v2-b0353104.pth")
     return model

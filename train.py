@@ -20,7 +20,7 @@ from torch.autograd import profiler
 from thop import profile
 from utils import clip_gradient, LR_Scheduler
 
-os.environ["CUDA_VISIBLE_DEVICES"] = ''
+os.environ["CUDA_VISIBLE_DEVICES"] = '0'
 
 GPU_NUMS = torch.cuda.device_count()
 p = OrderedDict()
@@ -103,6 +103,8 @@ print(torch.cuda.is_available())
 parser.add_argument('--cuda', default=True, type=lambda x: (str(x).lower() == 'true'),
                         help='Run on CPU or GPU. If TRUE, then GPU.')
 # train
+parser.add_argument('--dataset_root', type=str, default='../data')  # 训练过程中输出的保存路径
+parser.add_argument('--dataset', type=str, choices=['rdvs', 'vidsod_100', 'dvisal'])  # 训练过程中输出的保存路径
 parser.add_argument('--epoch', type=int, default=101)
 parser.add_argument('--gpu_id', type=str, default='0', help='the gpu id')
 parser.add_argument('--epoch_save', type=int, default=5)
@@ -117,16 +119,16 @@ parser.add_argument('--lr_mode', default='step', help='Learning rate policy, ste
 parser.add_argument('--model_path', type=str, default='')
 parser.add_argument('--local_rank', default=-1, type=int, help='node rank for distributed training')
 
-# test in train
-parser.add_argument('--test_batch_size', type=int, default=8)
-parser.add_argument('--train_dataset', type=list, default=[''])
+# # test in train
+# parser.add_argument('--test_batch_size', type=int, default=8)
+# parser.add_argument('--train_dataset', type=list, default=[''])
 # Misc
 parser.add_argument('--mode', type=str, default='train', choices=['train', 'test'])
 config = parser.parse_args()
 
-config.save_fold = config.save_fold + '/' + 'New_RDVS'
-if not os.path.exists("%s" % (config.save_fold)):
-    os.mkdir("%s" % (config.save_fold))
+config.save_fold = os.path.join(config.save_fold, config.dataset)
+if not os.path.exists(config.save_fold):
+    os.makedirs(config.save_fold)
 
 
 def test_intrain(net_bone, test_loader, epoch):
@@ -332,7 +334,7 @@ if __name__ == '__main__':
         transform.FixedResize(size=(config.input_size, config.input_size)),
         transform.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
         transform.ToTensor()])
-    dataset_train = Dataset(datasets=config.train_dataset,
+    dataset_train = Dataset(datasets=[config.dataset], dataset_root=config.dataset_root,
                             transform=composed_transforms_ts, mode='train')
     # datasampler = torch.utils.data.distributed.DistributedSampler(dataset_train, num_replicas=dist.get_world_size(),
     #                                                               rank=args.local_rank, shuffle=True)
@@ -344,16 +346,16 @@ if __name__ == '__main__':
                                  shuffle=True)
     print("Training Set, DataSet Size:{}, DataLoader Size:{}, batch_size:{}".format(len(dataset_train), len(dataloader),config.batch_size))
     
-    # for test in train
-    composed_transforms_te = transforms.Compose([
-        transform.FixedResize(size=(config.input_size, config.input_size)),
-        transform.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
-        transform.ToTensor()])
+    # # for test in train
+    # composed_transforms_te = transforms.Compose([
+    #     transform.FixedResize(size=(config.input_size, config.input_size)),
+    #     transform.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
+    #     transform.ToTensor()])
 
-    dataset_test = Dataset(datasets=['RDVS'], transform=composed_transforms_te, mode='test')
-    test_loader = data.DataLoader(dataset_test, batch_size=config.test_batch_size, num_workers=config.num_thread,
-                                  drop_last=True, shuffle=False)
-    print("Testing Set, DataSet Size:{}, DataLoader Size:{}, batch_size:{}".format(len(dataset_test), len(test_loader),config.test_batch_size))
+    # dataset_test = Dataset(datasets=['RDVS'], transform=composed_transforms_te, mode='test')
+    # test_loader = data.DataLoader(dataset_test, batch_size=config.test_batch_size, num_workers=config.num_thread,
+    #                               drop_last=True, shuffle=False)
+    # print("Testing Set, DataSet Size:{}, DataLoader Size:{}, batch_size:{}".format(len(dataset_test), len(test_loader),config.test_batch_size))
     iter_num = len(dataloader)
     lr_scheduler = LR_Scheduler('poly', config.lr, config.epoch, iter_num)
 
@@ -429,10 +431,10 @@ if __name__ == '__main__':
 
             loss_write.append(loss_all / (i + 1))
 
-        test_intrain(net_bone, test_loader, epoch)
-        if (epoch) % config.epoch_save == 0:
-            torch.save(net_bone.state_dict(),
-                       '%s/epoch_%d_bone.pth' % (config.save_fold, epoch))
+        # test_intrain(net_bone, test_loader, epoch)
+        # if (epoch) % config.epoch_save == 0:
+        #     torch.save(net_bone.state_dict(),
+        #                '%s/epoch_%d_bone.pth' % (config.save_fold, epoch))
         loss_write_epoch.append(loss_all / (i + 1))
     with open("./train_loss_epoch100_2.txt", 'w') as train_los_e:
         for loss in loss_write_epoch:
